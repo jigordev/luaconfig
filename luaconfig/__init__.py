@@ -1,8 +1,8 @@
 import json, yaml, lupa
 from lupa import LuaRuntime
-from luaconfig.utils import is_list_table, table_to_list, lua_to_py_function
-from luaconfig.exceptions import LuaFuncToDict, LuaFuncToJSON, LuaFuncToYAML
 from luaconfig.consts import DEFAULT_LUA_KEYS
+from luaconfig.exceptions import LuaFunctionConversionError
+from luaconfig.utils import is_list_table, table_to_list, lua_to_py_function, python_to_lua
 
 class LuaConfig:
     def __init__(self, filepath):
@@ -43,7 +43,7 @@ class LuaConfig:
 
     def save(self):
         with open(self.filepath, 'w', encoding='utf-8') as file:
-            file.write(self.lua.table_to_string(self.config))
+            file.write(python_to_lua(self.to_dict()))
 
     def to_dict(self, allow_function=False):
         def _to_dict_recursive(data):
@@ -53,7 +53,7 @@ class LuaConfig:
                     if allow_function:
                         result[key] = lua_to_py_function(value)
                     else:
-                        raise LuaFuncToDict
+                        raise LuaFunctionConversionError
                 elif lupa.lua_type(value) == "table":
                     table = _to_dict_recursive(value)
                     if is_list_table(table):
@@ -67,15 +67,7 @@ class LuaConfig:
         return result
 
     def to_json(self):
-        try:
-            dict_config = self.to_dict()
-        except LuaFuncToDict:
-            raise LuaFuncToJSON
-        return json.dumps(dict_config)
+        return json.dumps(self.to_dict())
 
     def to_yaml(self):
-        try:
-            dict_config = self.to_dict()
-        except LuaFuncToDict:
-            raise LuaFuncToYAML
-        return yaml.dump(dict_config, default_flow_style=False)
+        return yaml.dump(self.to_dict(), default_flow_style=False)
