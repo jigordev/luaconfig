@@ -1,4 +1,4 @@
-import json, yaml
+import json, yaml, lupa
 from lupa import LuaRuntime
 from luaconfig.utils import is_list_table, table_to_list, lua_to_py_function
 from luaconfig.exceptions import LuaFuncToDict, LuaFuncToJSON, LuaFuncToYAML
@@ -23,9 +23,6 @@ class LuaConfig:
                 
                 config[key] = value
         return config
-
-    def _lua_type(self, value):
-        return self.lua.globals().type(value)
 
     def get_value(self, key, default=None):
         keys = key.split('.')
@@ -52,19 +49,19 @@ class LuaConfig:
         def _to_dict_recursive(data):
             result = {}
             for key, value in data.items():
-                if self._lua_type(value) == "function":
+                if lupa.lua_type(value) == "function":
                     if allow_function:
                         result[key] = lua_to_py_function(value)
                     else:
                         raise LuaFuncToDict
-                elif self._lua_type(value) != "table":
-                    result[key] = value
-                else:
+                elif lupa.lua_type(value) == "table":
                     table = _to_dict_recursive(value)
                     if is_list_table(table):
                         result[key] = table_to_list(table)
                     else:
                         result[key] = table
+                else:
+                    result[key] = value
             return result
         result = _to_dict_recursive(self.config)
         return result
