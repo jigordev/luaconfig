@@ -2,7 +2,7 @@ import json, yaml
 from lupa import LuaRuntime
 from luaconfig.utils import is_list_table, table_to_list, lua_to_py_function
 from luaconfig.exceptions import LuaFuncToDict, LuaFuncToJSON, LuaFuncToYAML
-from luaconfig.consts import DEFAULT_LUA_TABLES, LUA_FUNCTION_TYPE_STR, LUA_TABLE_TYPE_STR
+from luaconfig.consts import DEFAULT_LUA_KEYS
 
 class LuaConfig:
     def __init__(self, filepath):
@@ -18,9 +18,14 @@ class LuaConfig:
             
             for key, value in self.lua.globals().items():
                 type_str = str(type(value))
-                if type_str == LUA_TABLE_TYPE_STR and key not in DEFAULT_LUA_TABLES:
-                    config[key] = value
+                if key in DEFAULT_LUA_KEYS:
+                    continue
+                
+                config[key] = value
         return config
+
+    def _lua_type(self, value):
+        return self.lua.globals().type(value)
 
     def get_value(self, key, default=None):
         keys = key.split('.')
@@ -47,12 +52,12 @@ class LuaConfig:
         def _to_dict_recursive(data):
             result = {}
             for key, value in data.items():
-                if str(type(value)) == LUA_FUNCTION_TYPE_STR:
+                if self._lua_type(value) == "function":
                     if allow_function:
                         result[key] = lua_to_py_function(value)
                     else:
                         raise LuaFuncToDict
-                elif str(type(value)) != LUA_TABLE_TYPE_STR:
+                elif self._lua_type(value) != "table":
                     result[key] = value
                 else:
                     table = _to_dict_recursive(value)
