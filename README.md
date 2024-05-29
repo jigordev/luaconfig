@@ -76,14 +76,6 @@ config_yaml = config.to_yaml()
 print(config_yaml)
 ```
 
-## Error Handling
-
-LuaConfig provides custom exceptions to handle errors during conversions:
-
-- `LuaFuncToDict`: Raised when attempting to convert a Lua function to a dictionary without allowing functions.
-- `LuaFuncToJSON`: Raised when converting to JSON and encountering a Lua function.
-- `LuaFuncToYAML`: Raised when converting to YAML and encountering a Lua function.
-
 ## Dependencies
 
 LuaConfig depends on the following libraries:
